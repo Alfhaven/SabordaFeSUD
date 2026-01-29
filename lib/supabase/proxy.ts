@@ -10,10 +10,13 @@ export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+  console.log('[v0] Proxy - Supabase URL exists:', !!supabaseUrl)
+  console.log('[v0] Proxy - Supabase Anon Key exists:', !!supabaseAnonKey)
+
   // If environment variables are not set, skip Supabase session handling
   // This allows the app to work while env vars are being configured
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('[Supabase] Environment variables not configured. Skipping session handling.')
+    console.warn('[v0] Supabase environment variables not configured. Skipping session handling.')
     return supabaseResponse
   }
 

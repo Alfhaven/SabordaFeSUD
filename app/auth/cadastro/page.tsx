@@ -67,9 +67,14 @@ export default function CadastroPage() {
     }
 
     try {
+      // Debug: verificar variáveis de ambiente
+      console.log('[v0] NEXT_PUBLIC_SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
+      console.log('[v0] NEXT_PUBLIC_SUPABASE_ANON_KEY exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+      
       let supabase
       try {
         supabase = createClient()
+        console.log('[v0] Supabase client created successfully')
       } catch (clientError) {
         console.error('[v0] Supabase client error:', clientError)
         setError("Erro de configuração do sistema. Por favor, tente novamente em alguns minutos ou entre em contato com o suporte.")
@@ -80,6 +85,7 @@ export default function CadastroPage() {
         return
       }
       
+      console.log('[v0] Attempting signUp with email:', email)
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
