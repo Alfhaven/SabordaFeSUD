@@ -42,6 +42,7 @@ interface Spice {
   description: string | null
   price: number
   weight_grams: number
+  package_weight_grams?: number
   image_url: string | null
   available: boolean
   created_at: string
