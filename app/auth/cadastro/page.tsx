@@ -67,7 +67,18 @@ export default function CadastroPage() {
     }
 
     try {
-      const supabase = createClient()
+      let supabase
+      try {
+        supabase = createClient()
+      } catch (clientError) {
+        console.error('[v0] Supabase client error:', clientError)
+        setError("Erro de configuração do sistema. Por favor, tente novamente em alguns minutos ou entre em contato com o suporte.")
+        if (audioDescriptionEnabled) {
+          speak("Erro de configuração do sistema.")
+        }
+        setLoading(false)
+        return
+      }
       
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
