@@ -11,14 +11,11 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAccessibility } from "@/components/accessibility-provider"
-import { Loader2, MapPin, Bike, Car, Clock, AlertCircle, Info, XCircle } from "lucide-react"
+import { Loader2, MapPin, Clock, AlertCircle, Info, XCircle } from "lucide-react"
 
 interface ShippingResult {
   distance: number
-  carTime: string
-  bikeTime: string
-  carPrice: number
-  bikePrice: number
+  estimatedTime: string
   neighborhood: string
   city: string
   state: string
@@ -95,21 +92,13 @@ export default function FretePage() {
       // Calcular distância estimada baseada no bairro/região
       const distance = calculateDistanceInSaoPaulo(data.bairro, cleanCep)
       
-      // Calcular tempos (velocidades médias: carro 25km/h no trânsito de SP, bike/moto 18km/h)
-      const carHours = distance / 25
-      const bikeHours = distance / 18
-
-      // Calcular preços
-      // Preço base + taxa por km
-      const carPrice = Math.max(15, 8 + distance * 2.5)
-      const bikePrice = Math.max(10, 5 + distance * 1.8)
+      // Calcular tempo estimado (velocidade média: 20km/h considerando trânsito de SP)
+      const hours = distance / 20
+      const estimatedTime = formatTime(hours)
 
       const result: ShippingResult = {
         distance: Math.round(distance * 10) / 10,
-        carTime: formatTime(carHours),
-        bikeTime: formatTime(bikeHours),
-        carPrice: Math.round(carPrice * 100) / 100,
-        bikePrice: Math.round(bikePrice * 100) / 100,
+        estimatedTime,
         neighborhood: data.bairro || "Centro",
         city: data.localidade,
         state: data.uf,
@@ -118,7 +107,7 @@ export default function FretePage() {
       setResult(result)
 
       if (audioDescriptionEnabled) {
-        speak(`Frete calculado para ${data.bairro}, São Paulo. Distância estimada: ${result.distance} quilômetros.`)
+        speak(`Tempo de entrega calculado para ${data.bairro}, São Paulo. Distância estimada: ${result.distance} quilômetros. Tempo estimado: ${estimatedTime}.`)
       }
     } catch (err) {
       setError("Erro ao calcular o frete. Tente novamente.")
@@ -243,13 +232,6 @@ export default function FretePage() {
     return `${h}h ${m}min`
   }
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(price)
-  }
-
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -259,10 +241,10 @@ export default function FretePage() {
           <div className="mx-auto max-w-2xl">
             <div className="mb-8 text-center">
               <h1 className="text-3xl font-bold text-foreground md:text-4xl">
-                Calcular Frete
+                Tempo de Entrega
               </h1>
               <p className="mt-2 text-muted-foreground">
-                Digite seu CEP para calcular o tempo e custo de entrega
+                Digite seu CEP para calcular o tempo estimado de entrega
               </p>
               <p className="mt-1 text-sm text-primary font-medium">
                 Entregamos apenas na cidade de São Paulo - SP
@@ -339,88 +321,34 @@ export default function FretePage() {
 
                 {result && (
                   <div className="mt-6 space-y-4">
-                    <div className="rounded-lg bg-secondary/50 p-4">
-                      <p className="font-medium text-foreground">
-                        Destino: {result.neighborhood}, {result.city} - {result.state}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Distância estimada: {result.distance} km a partir do {ORIGIN_NEIGHBORHOOD}
-                      </p>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {/* Bike/Moto Option */}
-                      <Card className="border-border bg-background">
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="rounded-full bg-primary/10 p-2">
-                              <Bike className="h-6 w-6 text-primary" aria-hidden="true" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-foreground">Motoboy</p>
-                              <p className="text-xs text-muted-foreground">Entrega ágil</p>
-                            </div>
+                    <Card className="border-primary/30 bg-primary/5">
+                      <CardContent className="p-6">
+                        <div className="flex items-center gap-4">
+                          <div className="rounded-full bg-primary/20 p-3">
+                            <Clock className="h-8 w-8 text-primary" aria-hidden="true" />
                           </div>
-                          <div className="mt-4 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                Tempo estimado
-                              </span>
-                              <span className="font-medium text-foreground">{result.bikeTime}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Preço</span>
-                              <span className="text-lg font-bold text-primary">
-                                {formatPrice(result.bikePrice)}
-                              </span>
-                            </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground">Tempo estimado de entrega</p>
+                            <p className="text-2xl font-bold text-primary">{result.estimatedTime}</p>
                           </div>
-                          {result.distance <= 15 && (
-                            <p className="mt-2 text-xs text-primary font-medium">Recomendado para sua região!</p>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      {/* Car Option */}
-                      <Card className="border-border bg-background">
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="rounded-full bg-primary/10 p-2">
-                              <Car className="h-6 w-6 text-primary" aria-hidden="true" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-foreground">Carro</p>
-                              <p className="text-xs text-muted-foreground">Pedidos maiores</p>
-                            </div>
-                          </div>
-                          <div className="mt-4 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                Tempo estimado
-                              </span>
-                              <span className="font-medium text-foreground">{result.carTime}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Preço</span>
-                              <span className="text-lg font-bold text-primary">
-                                {formatPrice(result.carPrice)}
-                              </span>
-                            </div>
-                          </div>
-                          {result.distance > 15 && (
-                            <p className="mt-2 text-xs text-primary font-medium">Recomendado para pedidos grandes!</p>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </div>
+                        </div>
+                        
+                        <div className="mt-4 pt-4 border-t border-primary/20">
+                          <p className="font-medium text-foreground">
+                            Destino: {result.neighborhood}, {result.city} - {result.state}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Distância estimada: {result.distance} km a partir do {ORIGIN_NEIGHBORHOOD}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
 
                     <Alert className="border-primary/20 bg-primary/5">
                       <Info className="h-4 w-4 text-primary" />
                       <AlertDescription className="text-sm text-foreground">
-                        Os valores e tempos são estimativas baseadas nas condições normais de trânsito em São Paulo. 
-                        O frete final será confirmado no momento da compra. Tempos podem variar em horários de pico.
+                        O tempo estimado considera as condições normais de trânsito em São Paulo e pode variar em horários de pico. 
+                        A entrega e gratuita para pedidos pequenos!
                       </AlertDescription>
                     </Alert>
                   </div>
@@ -438,7 +366,7 @@ export default function FretePage() {
                 </p>
                 <p className="text-muted-foreground text-sm mt-2">
                   As entregas são feitas de <strong>segunda a sábado</strong>, das 9h às 18h. 
-                  Para pedidos acima de R$ 100,00 na Zona Sul, o frete é grátis!
+                  A entrega e gratuita para todos os pedidos!
                 </p>
               </CardContent>
             </Card>

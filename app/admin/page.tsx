@@ -7,23 +7,25 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AdminSpiceForm } from "@/components/admin-spice-form"
 import { AdminSpiceList } from "@/components/admin-spice-list"
+import { AdminChapelDeliveries } from "@/components/admin-chapel-deliveries"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, AlertCircle, Package, DollarSign, Users } from "lucide-react"
+import { Loader2, AlertCircle, Package, DollarSign, Users, Church, Bell } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 
 interface Stats {
   totalSpices: number
   totalOrders: number
   totalRevenue: number
+  pendingChapelDeliveries: number
 }
 
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<Stats>({ totalSpices: 0, totalOrders: 0, totalRevenue: 0 })
+  const [stats, setStats] = useState<Stats>({ totalSpices: 0, totalOrders: 0, totalRevenue: 0, pendingChapelDeliveries: 0 })
   const router = useRouter()
   const supabase = createClient()
 
@@ -46,15 +48,17 @@ export default function AdminPage() {
       }
 
       // Fetch stats
-      const [spicesCount, ordersData] = await Promise.all([
+      const [spicesCount, ordersData, chapelData] = await Promise.all([
         supabase.from("spices").select("*", { count: "exact", head: true }),
         supabase.from("orders").select("total_amount"),
+        supabase.from("chapel_deliveries").select("id", { count: "exact", head: true }).eq("status", "pending"),
       ])
 
       setStats({
         totalSpices: spicesCount.count ?? 0,
         totalOrders: ordersData.data?.length ?? 0,
         totalRevenue: ordersData.data?.reduce((sum, order) => sum + (order.total_amount ?? 0), 0) ?? 0,
+        pendingChapelDeliveries: chapelData.count ?? 0,
       })
 
       setLoading(false)
@@ -120,7 +124,7 @@ export default function AdminPage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="mb-8 grid gap-4 sm:grid-cols-3">
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card className="border-border bg-card">
               <CardContent className="flex items-center gap-4 p-6">
                 <div className="rounded-full bg-primary/10 p-3">
@@ -156,11 +160,39 @@ export default function AdminPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className={`border-border bg-card ${stats.pendingChapelDeliveries > 0 ? "border-orange-300 bg-orange-50" : ""}`}>
+              <CardContent className="flex items-center gap-4 p-6">
+                <div className={`rounded-full p-3 ${stats.pendingChapelDeliveries > 0 ? "bg-orange-100" : "bg-primary/10"}`}>
+                  <Church className={`h-6 w-6 ${stats.pendingChapelDeliveries > 0 ? "text-orange-600" : "text-primary"}`} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className={`text-sm ${stats.pendingChapelDeliveries > 0 ? "text-orange-600" : "text-muted-foreground"}`}>
+                    Entregas na Capela
+                  </p>
+                  <p className={`text-2xl font-bold ${stats.pendingChapelDeliveries > 0 ? "text-orange-800" : "text-card-foreground"}`}>
+                    {stats.pendingChapelDeliveries} pendentes
+                  </p>
+                </div>
+                {stats.pendingChapelDeliveries > 0 && (
+                  <Bell className="ml-auto h-5 w-5 text-orange-500 animate-pulse" aria-hidden="true" />
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="list" className="space-y-4">
+          <Tabs defaultValue="chapel" className="space-y-4">
             <TabsList className="bg-muted">
+              <TabsTrigger value="chapel" className="data-[state=active]:bg-background relative">
+                <Church className="mr-2 h-4 w-4" />
+                Entregas Capela
+                {stats.pendingChapelDeliveries > 0 && (
+                  <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
+                    {stats.pendingChapelDeliveries}
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="list" className="data-[state=active]:bg-background">
                 Lista de Temperos
               </TabsTrigger>
@@ -168,6 +200,23 @@ export default function AdminPage() {
                 Adicionar Tempero
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="chapel">
+              <Card className="border-border bg-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-card-foreground">
+                    <Church className="h-5 w-5 text-primary" />
+                    Entregas na Capela
+                  </CardTitle>
+                  <CardDescription>
+                    Gerencie as entregas especiais de domingo na A Igreja de Jesus Cristo dos Santos dos Ultimos Dias (CEP: 04678-000)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AdminChapelDeliveries />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="list">
               <Card className="border-border bg-card">

@@ -19,6 +19,7 @@ interface SpiceFormData {
   description: string
   price: string
   weight_grams: string
+  package_weight_grams: string
   image_url: string
   available: boolean
 }
@@ -30,6 +31,7 @@ interface AdminSpiceFormProps {
     description: string | null
     price: number
     weight_grams: number
+    package_weight_grams?: number
     image_url: string | null
     available: boolean
   }
@@ -42,6 +44,7 @@ export function AdminSpiceForm({ initialData, onSuccess }: AdminSpiceFormProps) 
     description: initialData?.description ?? "",
     price: initialData?.price?.toString() ?? "",
     weight_grams: initialData?.weight_grams?.toString() ?? "50",
+    package_weight_grams: initialData?.package_weight_grams?.toString() ?? "",
     image_url: initialData?.image_url ?? "",
     available: initialData?.available ?? true,
   })
@@ -88,12 +91,24 @@ export function AdminSpiceForm({ initialData, onSuccess }: AdminSpiceFormProps) 
       return
     }
 
+    // Package weight is optional but must be valid if provided
+    let packageWeight: number | null = null
+    if (formData.package_weight_grams.trim()) {
+      packageWeight = parseInt(formData.package_weight_grams)
+      if (isNaN(packageWeight) || packageWeight <= 0) {
+        setError("Digite um peso de pacote válido em gramas.")
+        setLoading(false)
+        return
+      }
+    }
+
     try {
       const spiceData = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         price,
         weight_grams: weight,
+        package_weight_grams: packageWeight || weight, // Se não informado, usa o peso do produto
         image_url: formData.image_url.trim() || null,
         available: formData.available,
       }
@@ -123,6 +138,7 @@ export function AdminSpiceForm({ initialData, onSuccess }: AdminSpiceFormProps) 
           description: "",
           price: "",
           weight_grams: "50",
+          package_weight_grams: "",
           image_url: "",
           available: true,
         })
@@ -209,7 +225,7 @@ export function AdminSpiceForm({ initialData, onSuccess }: AdminSpiceFormProps) 
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="weight_grams" className="text-foreground">Peso (gramas) *</Label>
+          <Label htmlFor="weight_grams" className="text-foreground">Peso do Produto (gramas) *</Label>
           <Input
             id="weight_grams"
             name="weight_grams"
@@ -221,20 +237,40 @@ export function AdminSpiceForm({ initialData, onSuccess }: AdminSpiceFormProps) 
             min="1"
             className="bg-background"
           />
+          <p className="text-xs text-muted-foreground">
+            Peso liquido do tempero para exibicao aos clientes
+          </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="image_url" className="text-foreground">URL da Imagem</Label>
+          <Label htmlFor="package_weight_grams" className="text-foreground">Peso do Pacote (gramas)</Label>
           <Input
-            id="image_url"
-            name="image_url"
-            type="url"
-            value={formData.image_url}
+            id="package_weight_grams"
+            name="package_weight_grams"
+            type="number"
+            value={formData.package_weight_grams}
             onChange={handleChange}
-            placeholder="https://exemplo.com/imagem.jpg"
+            placeholder="Ex: 60"
+            min="1"
             className="bg-background"
           />
+          <p className="text-xs text-muted-foreground">
+            Peso total incluindo embalagem (usado para calcular limites de entrega)
+          </p>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="image_url" className="text-foreground">URL da Imagem</Label>
+        <Input
+          id="image_url"
+          name="image_url"
+          type="url"
+          value={formData.image_url}
+          onChange={handleChange}
+          placeholder="https://exemplo.com/imagem.jpg"
+          className="bg-background"
+        />
       </div>
 
       <div className="flex items-center gap-3">

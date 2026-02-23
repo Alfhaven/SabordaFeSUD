@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAccessibility } from "@/components/accessibility-provider"
 import { useToast } from "@/hooks/use-toast"
+import { CheckoutForm } from "@/components/checkout-form"
 import { Loader2, Trash2, Plus, Minus, ShoppingBag, Package } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 
@@ -71,6 +72,10 @@ export default function CarrinhoPage() {
   }
 
   const total = items.reduce((sum, item) => sum + item.spice.price * item.quantity, 0)
+
+  const handleCheckoutSuccess = () => {
+    setItems([])
+  }
 
   const updateQuantity = async (item: CartItem, delta: number) => {
     const newQuantity = item.quantity + delta
@@ -257,37 +262,43 @@ export default function CarrinhoPage() {
               <div>
                 <Card className="sticky top-24 border-border bg-card">
                   <CardHeader>
-                    <CardTitle className="text-card-foreground">Resumo</CardTitle>
+                    <CardTitle className="text-card-foreground">Resumo do Pedido</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="text-muted-foreground">Subtotal ({items.length} {items.length === 1 ? "item" : "itens"})</span>
                       <span className="text-foreground">{formatPrice(total)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Frete</span>
-                      <Link href="/frete" className="text-primary hover:underline">
-                        Calcular
-                      </Link>
+                      <span className="text-muted-foreground">Entrega</span>
+                      <span className="text-primary font-medium">Gratis</span>
                     </div>
                     <div className="border-t border-border pt-4">
                       <div className="flex justify-between font-semibold">
                         <span className="text-foreground">Total</span>
-                        <span className="text-primary">{formatPrice(total)}</span>
+                        <span className="text-primary text-xl">{formatPrice(total)}</span>
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="flex flex-col gap-2">
-                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                      Finalizar Compra
-                    </Button>
-                    <Link href="/loja" className="w-full">
-                      <Button variant="outline" className="w-full bg-transparent">
-                        Continuar Comprando
-                      </Button>
-                    </Link>
-                  </CardFooter>
                 </Card>
+
+                {/* Checkout Form com opção de entrega na capela */}
+                <div className="mt-4">
+                  {user && (
+                    <CheckoutForm 
+                      items={items} 
+                      total={total} 
+                      user={user} 
+                      onSuccess={handleCheckoutSuccess}
+                    />
+                  )}
+                </div>
+
+                <Link href="/loja" className="mt-4 block">
+                  <Button variant="outline" className="w-full bg-transparent">
+                    Continuar Comprando
+                  </Button>
+                </Link>
               </div>
             </div>
           )}
